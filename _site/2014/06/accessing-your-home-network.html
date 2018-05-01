@@ -69,19 +69,18 @@
 
 <p>This guide is specifically for Linux and OpenWrt users, but you can probably do something similar in other environments too.</p>
 
-<h5>Pre-requisites:</h5>
+<h5 id="pre-requisites">Pre-requisites:</h5>
 
 <ul>
-<li>A router with <a href="https://openwrt.org/">OpenWrt</a> installed (with dropbear)</li>
-<li>A linux machine at home (with sshd)</li>
-<li>Another linux machine to test your setup (with ssh client)</li>
-<li>Key based ssh access to the router and the home machine</li>
+  <li>A router with <a href="https://openwrt.org/">OpenWrt</a> installed (with dropbear)</li>
+  <li>A linux machine at home (with sshd)</li>
+  <li>Another linux machine to test your setup (with ssh client)</li>
+  <li>Key based ssh access to the router and the home machine</li>
 </ul>
 
+<h1 id="step-1-configure-openwrt">Step 1: Configure OpenWrt</h1>
 
-<h1>Step 1: Configure OpenWrt</h1>
-
-<p>SSH into your OpenWrt router and enable port forwarding by adding the following block to <code>/etc/config/firewall</code>:</p>
+<p>SSH into your OpenWrt router and enable port forwarding by adding the following block to <code class="highlighter-rouge">/etc/config/firewall</code>:</p>
 
 <pre>
 config redirect
@@ -93,41 +92,36 @@ config redirect
     option dest_ip 192.168.1.22
 </pre>
 
-
 <p>After updating the file, execute this to enable the new firewall rules:</p>
 
 <pre>
 /etc/init.d/firewall restart
 </pre>
 
-
 <p>The above configuration forwards all traffic coming in on port <em>10022</em> on the router to the internal IP address <em>192.168.1.22</em>.</p>
 
-<p><code>src</code> is the network from which packets will be redirected</p>
+<p><code class="highlighter-rouge">src</code> is the network from which packets will be redirected</p>
 
-<p><code>src_dport</code> is the port on which the router will listen on publicly</p>
+<p><code class="highlighter-rouge">src_dport</code> is the port on which the router will listen on publicly</p>
 
-<p><code>dest_port</code> is the port exposed on your home machine</p>
+<p><code class="highlighter-rouge">dest_port</code> is the port exposed on your home machine</p>
 
-<p><code>dest</code> is the network on which openwrt will route the packets to</p>
+<p><code class="highlighter-rouge">dest</code> is the network on which openwrt will route the packets to</p>
 
-<p><code>dest_ip</code> is the IP address of your home computer</p>
+<p><code class="highlighter-rouge">dest_ip</code> is the IP address of your home computer</p>
 
-<p>If your router is directly connected to the internet (or via a cable modem), you should now be able to access port <code>10022</code> from the outside.</p>
+<p>If your router is directly connected to the internet (or via a cable modem), you should now be able to access port <code class="highlighter-rouge">10022</code> from the outside.</p>
 
-<p>You can verify this by ssh'ing into your machine using the public IP:</p>
+<p>You can verify this by ssh’ing into your machine using the public IP:</p>
 
 <pre>ssh $PUBLIC_IP_OF_HOME -p 10022</pre>
 
-
 <p>If this works, please proceed to <em>Step 2</em>, otherwise make sure that sshd is running on your home machine, and that your router is directly connected to the internet.</p>
 
-<h1>Step 2: Add your host to ssh_config</h1>
-
+<h1 id="step-2-add-your-host-to-ssh_config">Step 2: Add your host to ssh_config</h1>
 <p>It is not convenient to type the ssh command with an IP address, port etc all the time, so lets create an entry in ssh_config to simplify things.</p>
 
-<p>Add this to your <code>~/.ssh/config</code>:</p>
-
+<p>Add this to your <code class="highlighter-rouge">~/.ssh/config</code>:</p>
 <pre>
 Host home.public
 IdentityFile $PATH_TO_YOUR_PRIV_KEY
@@ -137,36 +131,33 @@ ForwardAgent yes
 Hostname $PUBLIC_IP_OF_HOME
 </pre>
 
-
 <p>If you would like to know more about the configuration options, please read the man page for ssh_config. Now you can ssh into your home machine by doing this:</p>
-
 <pre>
 ssh home.public
 </pre>
 
-
-<h1>Step 3: Access your home services in a secure way</h1>
-
-<p>The SSH client can do port forwarding to transparently access services running on a remote machine. This means that we can access services running on the home machine in a secure way. Just add this in <code>~/.ssh/config</code> (to the block we created in Step 2):</p>
-
+<h1 id="step-3-access-your-home-services-in-a-secure-way">Step 3: Access your home services in a secure way</h1>
+<p>The SSH client can do port forwarding to transparently access services running on a remote machine. This means that we can access services running on the home machine in a secure way. Just add this in <code class="highlighter-rouge">~/.ssh/config</code> (to the block we created in Step 2):</p>
 <pre>
 LocalForward 8888 localhost:80
 </pre>
 
-
 <p>This will forward port 8888 on your machine to port 80 of your home machine.</p>
 
-<h1>Step 4: Keep track of your public IP</h1>
-
-<p>If you don't have the privilege of a static IP address, you would need to keep track of it since it normally changes every once in a while. There are two options to solve this:</p>
+<h1 id="step-4-keep-track-of-your-public-ip">Step 4: Keep track of your public IP</h1>
+<p>If you don’t have the privilege of a static IP address, you would need to keep track of it since it normally changes every once in a while. There are two options to solve this:</p>
 
 <ol>
-<li><p>Use something like <a href="https://dyndns.com">dyndns</a>, <a href="http://noip.com">noip</a> etc. Both have an HTTP API to update the IP, so basically you just need to send an HTTP call (using curl or something) every one minute (using cron) to update your IP address. If you would like to know your current public IP address, just do: <code>curl ifconfig.me</code>. Kudos to whoever runs that site.</p></li>
-<li><p>Roll your own. If you don't want to use a dynamic dns service, you can periodically send an HTTP request to a remote server with your IP address in the path. Just install nginx (or Apache) on your remote server and enable access logging. No need to even write an application to store the IP address in a database. Just tail the access logs and see what your home public IP address is. The downside of this is that whenever your home IP changes, you would need to login to your remote server to find out the new IP. That's not too bad!</p></li>
+  <li>
+    <p>Use something like <a href="https://dyndns.com">dyndns</a>, <a href="http://noip.com">noip</a> etc. Both have an HTTP API to update the IP, so basically you just need to send an HTTP call (using curl or something) every one minute (using cron) to update your IP address. If you would like to know your current public IP address, just do: <code class="highlighter-rouge">curl ifconfig.me</code>. Kudos to whoever runs that site.</p>
+  </li>
+  <li>
+    <p>Roll your own. If you don’t want to use a dynamic dns service, you can periodically send an HTTP request to a remote server with your IP address in the path. Just install nginx (or Apache) on your remote server and enable access logging. No need to even write an application to store the IP address in a database. Just tail the access logs and see what your home public IP address is. The downside of this is that whenever your home IP changes, you would need to login to your remote server to find out the new IP. That’s not too bad!</p>
+  </li>
 </ol>
 
-
 <p>I hope this was useful.</p>
+
 
 		<div id="share" class="feat">
 			<a href="http://twitter.com/wmalik" class="popup"><span class="icon-twitter"></span></a>

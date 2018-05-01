@@ -7,6 +7,5 @@ baseurl:
 bio_title: Hi, my name is Wasif.
 bio_desc: I am a developer originally from Pakistan and currently living in Berlin. I love free software, and playing with computers in general. With this blog, I want to prove to the world that I can also write long and boring blog posts.<br><a href='http://twitter.com/wmalik'>Twitter</a><br><a href='mailto:wmalik_at_gmail_dot_com'>Email</a><br><a href='xmpp:wm@wasifmalik.com'>Jabber/XMPP</a>
 
-markdown: rdiscount
 permalink: :year/:month/:title.html
 rouge: true

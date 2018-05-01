@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+    <title>wasifmalik.com - Using SSH and OpenWrt to access your home network from the outside</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta http-equiv="content-language" content="en-gb" />
+    <meta name="description" content="Fluid, responsive blog theme for Jekyll.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,700' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-10585730-3', 'wasifmalik.com');
+      ga('send', 'pageview');
+
+    </script>
+</head>
+
+    <body>
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+
+        <div id="off-canvas">
+        	<div id="avatar">
+        		<img src="/assets/img/avatar.jpg" alt="Profile Picture" title="wow, very face, such photograph, wow">
+        	</div>
+        	<div id="bio">
+                <h1>Hi, my name is Wasif.</h1>
+                <p>I am a developer originally from Pakistan and currently living in Berlin. I love free software, and playing with computers in general. With this blog, I want to prove to the world that I can also write long and boring blog posts.<br><a href='http://twitter.com/wmalik'>Twitter</a><br><a href='mailto:wmalik_at_gmail_dot_com'>Email</a><br><a href='xmpp:wm@wasifmalik.com'>Jabber/XMPP</a></p>
+        	</div>
+        </div>
+
+        <header>
+        	<div class="h-wrap">
+            	<h1 class="title"><a href="http://wasifmalik.com" title="Back to Homepage">wasifmalik.com</a></h1>
+            	<a class="menu-icon" title="Open Bio"><span class="lines"></span></a>
+            </div>
+        </header>
+
+        <main>
+
+
+    <a rel="prev" href="/2014/02/byebyewordpress.html" id="prev">&larr;</a>
+
+
+    <a rel="next" href="/2014/07/shell-shortcuts.html" id="next">&rarr;</a>
+
+
+<section id="single-wrap">
+	<article class="single-content">
+		<div class="feat">
+			<h5 class="page-date">14 June 2014</h5>
+		</div>
+		<h1 class="page-title">Using SSH and OpenWrt to access your home network from the outside</h1>
+		<p>I recently set up access to my home network so that I can access it when I am not home. I could not find a tutorial on the web so I thought I should write one.</p>
+
+<p>This guide is specifically for Linux and OpenWrt users, but you can probably do something similar in other environments too.</p>
+
+<h5>Pre-requisites:</h5>
+
+<ul>
+<li>A router with <a href="https://openwrt.org/">OpenWrt</a> installed (with dropbear)</li>
+<li>A linux machine at home (with sshd)</li>
+<li>Another linux machine to test your setup (with ssh client)</li>
+<li>Key based ssh access to the router and the home machine</li>
+</ul>
+
+
+<h1>Step 1: Configure OpenWrt</h1>
+
+<p>SSH into your OpenWrt router and enable port forwarding by adding the following block to <code>/etc/config/firewall</code>:</p>
+
+<pre>
+config redirect
+    option src wan
+    option src_dport 10022
+    option dest_port 22
+    option proto tcp
+    option dest lan
+    option dest_ip 192.168.1.22
+</pre>
+
+
+<p>After updating the file, execute this to enable the new firewall rules:</p>
+
+<pre>
+/etc/init.d/firewall restart
+</pre>
+
+
+<p>The above configuration forwards all traffic coming in on port <em>10022</em> on the router to the internal IP address <em>192.168.1.22</em>.</p>
+
+<p><code>src</code> is the network from which packets will be redirected</p>
+
+<p><code>src_dport</code> is the port on which the router will listen on publicly</p>
+
+<p><code>dest_port</code> is the port exposed on your home machine</p>
+
+<p><code>dest</code> is the network on which openwrt will route the packets to</p>
+
+<p><code>dest_ip</code> is the IP address of your home computer</p>
+
+<p>If your router is directly connected to the internet (or via a cable modem), you should now be able to access port <code>10022</code> from the outside.</p>
+
+<p>You can verify this by ssh'ing into your machine using the public IP:</p>
+
+<pre>ssh $PUBLIC_IP_OF_HOME -p 10022</pre>
+
+
+<p>If this works, please proceed to <em>Step 2</em>, otherwise make sure that sshd is running on your home machine, and that your router is directly connected to the internet.</p>
+
+<h1>Step 2: Add your host to ssh_config</h1>
+
+<p>It is not convenient to type the ssh command with an IP address, port etc all the time, so lets create an entry in ssh_config to simplify things.</p>
+
+<p>Add this to your <code>~/.ssh/config</code>:</p>
+
+<pre>
+Host home.public
+IdentityFile $PATH_TO_YOUR_PRIV_KEY
+User $YOUR_USER
+Port 10022
+ForwardAgent yes
+Hostname $PUBLIC_IP_OF_HOME
+</pre>
+
+
+<p>If you would like to know more about the configuration options, please read the man page for ssh_config. Now you can ssh into your home machine by doing this:</p>
+
+<pre>
+ssh home.public
+</pre>
+
+
+<h1>Step 3: Access your home services in a secure way</h1>
+
+<p>The SSH client can do port forwarding to transparently access services running on a remote machine. This means that we can access services running on the home machine in a secure way. Just add this in <code>~/.ssh/config</code> (to the block we created in Step 2):</p>
+
+<pre>
+LocalForward 8888 localhost:80
+</pre>
+
+
+<p>This will forward port 8888 on your machine to port 80 of your home machine.</p>
+
+<h1>Step 4: Keep track of your public IP</h1>
+
+<p>If you don't have the privilege of a static IP address, you would need to keep track of it since it normally changes every once in a while. There are two options to solve this:</p>
+
+<ol>
+<li><p>Use something like <a href="https://dyndns.com">dyndns</a>, <a href="http://noip.com">noip</a> etc. Both have an HTTP API to update the IP, so basically you just need to send an HTTP call (using curl or something) every one minute (using cron) to update your IP address. If you would like to know your current public IP address, just do: <code>curl ifconfig.me</code>. Kudos to whoever runs that site.</p></li>
+<li><p>Roll your own. If you don't want to use a dynamic dns service, you can periodically send an HTTP request to a remote server with your IP address in the path. Just install nginx (or Apache) on your remote server and enable access logging. No need to even write an application to store the IP address in a database. Just tail the access logs and see what your home public IP address is. The downside of this is that whenever your home IP changes, you would need to login to your remote server to find out the new IP. That's not too bad!</p></li>
+</ol>
+
+
+<p>I hope this was useful.</p>
+
+		<div id="share" class="feat">
+			<a href="http://twitter.com/wmalik" class="popup"><span class="icon-twitter"></span></a>
+		</div>
+	</article>
+</section>
+
+</main> <!-- MAIN -->
+
+<footer>
+<small>&copy; Wasif Malik </small>
+<small>
+(<a href="https://twitter.com/wmalik" target="_blank">Twitter</a>)
+(<a href="mailto:wmalik_at_gmail_dot_com" target="_blank">Email</a>)
+(<a href="xmpp:wm@wasifmalik.com" target="_blank">Jabber</a>)
+</small>
+</footer>
+
+	<script src="/js/main.js"></script>
+	</body>
+</html>
+

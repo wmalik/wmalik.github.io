@@ -9,4 +9,4 @@ bio_desc: I am a developer originally from Pakistan and currently living in Berl
 
 markdown: rdiscount
 permalink: :year/:month/:title.html
-pygments: true
+rouge: true
